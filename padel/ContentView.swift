@@ -6,26 +6,53 @@
 //
 
 import SwiftUI
+import SwiftData
 
-struct Player: Identifiable {
-    let id = UUID()
-    let name: String
+@Model
+final class Player: Identifiable {
+    @Attribute(.unique) let id = UUID()
+    var name: String
+
+    var game: Game
+
+    init(name: String) {
+        self.name = name
+    }
 }
 
-struct Court {
-    let name: String
-    let address: String
+@Model
+final class Court {
+    var name: String
+    var address: String
+
+    var game: Game
+
+    init(name: String, address: String) {
+        self.name = name
+        self.address = address
+    }
 }
 
-struct Game: Identifiable {
-    let id = UUID()
-    let date: Date
-    let players: [Player]
-    let court: Court
+@Model
+final class Game: Identifiable {
+    @Attribute(.unique) let id = UUID()
+    var date: Date
+    @Relationship(.cascade, inverse: \Player.game)
+    var players: [Player]
+    @Relationship(.cascade, inverse: \Court.game)
+    var court: Court
+
+    init(date: Date, player: [Player], court: Court) {
+        self.date = date
+        self.players = players
+        self.court = court
+    }
 }
 
 struct ContentView: View {
-    var gameList: [Game]
+    @Query var gameList: [Game]
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         List {
             ForEach(gameList) { game in
@@ -70,40 +97,31 @@ struct ContentView: View {
             })
         }
         .navigationTitle("Padel")
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    let item = Game(
+                        date: Date(),
+                        player: [
+                            .init(name: "Roberto"),
+                            .init(name: "Joaquim")
+                        ],
+                        court: .init(
+                            name: "Pavilhão 1",
+                            address: "Porto"
+                        )
+                    )
+                    modelContext.insert(item)
+                } label: {
+                    Text("Add")
+                }
+            }
+        }
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static let games = [
-        Game(
-            date: Date(),
-            players: [.init(name: "Roberto"), .init(name: "Alfredo")],
-            court: .init(
-                name: "Pavilhão 1",
-                address: "Porto"
-            )
-        ),
-        Game(
-            date: Date(),
-            players: [.init(name: "Ramiro")],
-            court: .init(
-                name: "Pavilhão 1",
-                address: "Porto"
-            )
-        ),
-        Game(
-            date: Date(),
-            players: [],
-            court: .init(
-                name: "Pavilhão 1",
-                address: "Porto"
-            )
-        )
-    ]
-
-    static var previews: some View {
-        NavigationStack {
-            ContentView(gameList: games)
-        }
+#Preview {
+    NavigationStack {
+        ContentView()
     }
 }
