@@ -5,15 +5,13 @@
 //  Created by Manuel Teixeira on 04/06/2023.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @Model
 final class Player: Identifiable {
-    @Attribute(.unique) let id = UUID()
     var name: String
-
-    var game: Game
+    var game: Game?
 
     init(name: String) {
         self.name = name
@@ -25,7 +23,7 @@ final class Court {
     var name: String
     var address: String
 
-    var game: Game
+    var game: Game?
 
     init(name: String, address: String) {
         self.name = name
@@ -35,14 +33,15 @@ final class Court {
 
 @Model
 final class Game: Identifiable {
-    @Attribute(.unique) let id = UUID()
     var date: Date
+    
     @Relationship(.cascade, inverse: \Player.game)
-    var players: [Player]
+    var players: [Player] = []
+    
     @Relationship(.cascade, inverse: \Court.game)
     var court: Court
 
-    init(date: Date, player: [Player], court: Court) {
+    init(date: Date, players: [Player], court: Court) {
         self.date = date
         self.players = players
         self.court = court
@@ -50,8 +49,8 @@ final class Game: Identifiable {
 }
 
 struct ContentView: View {
-    @Query var gameList: [Game]
     @Environment(\.modelContext) private var modelContext
+    @Query var gameList: [Game]
 
     var body: some View {
         List {
@@ -86,32 +85,27 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity)
             .swipeActions(edge: .leading, content: {
-                Button("I'm in") {
-                    
-                }
-                .tint(Color.green)
-                Button("I'm out") {
-                    
-                }
-                .tint(Color.red)
+                Button("I'm in") {}
+                    .tint(Color.green)
+                Button("I'm out") {}
+                    .tint(Color.red)
             })
         }
         .navigationTitle("Padel")
         .toolbar {
             ToolbarItem {
                 Button {
-                    let item = Game(
+                    let player = Player(name: "Roberto")
+                    let game = Game(
                         date: Date(),
-                        player: [
-                            .init(name: "Roberto"),
-                            .init(name: "Joaquim")
-                        ],
+                        players: [player],
                         court: .init(
                             name: "Pavilhão 1",
                             address: "Porto"
                         )
                     )
-                    modelContext.insert(item)
+                    player.game = game
+                    modelContext.insert(game)
                 } label: {
                     Text("Add")
                 }
